@@ -1,0 +1,120 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ลบ GUI เก่าทิ้งก่อนถ้าเคยรันไปแล้ว เพื่อไม่ให้ซ้อนกัน
+if playerGui:FindFirstChild("SakonRedBlackImmortalUI") then
+	playerGui.SakonRedBlackImmortalUI:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SakonRedBlackImmortalUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- กรอบ UI สีดำขลับ
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 240, 0, 130)
+mainFrame.Position = UDim2.new(0.5, -120, 0.45, -65)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+mainFrame.BorderSizePixel = 2
+mainFrame.BorderColor3 = Color3.fromRGB(200, 25, 35)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 10)
+uiCorner.Parent = mainFrame
+
+-- แถบหัวข้อสีแดงเข้ม
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(1, 0, 0, 36)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.BackgroundColor3 = Color3.fromRGB(140, 15, 25)
+titleLabel.BorderSizePixel = 0
+titleLabel.Text = "Sakon Town | เมนูอมตะ"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 15
+titleLabel.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = titleLabel
+
+-- ปุ่มเปิดสีแดงตามสั่ง
+local immortalButton = Instance.new("TextButton")
+immortalButton.Name = "ImmortalButton"
+immortalButton.Size = UDim2.new(0, 196, 0, 48)
+immortalButton.Position = UDim2.new(0, 22, 0, 56)
+immortalButton.BackgroundColor3 = Color3.fromRGB(215, 25, 35)
+immortalButton.BorderSizePixel = 0
+immortalButton.Text = "อมตะ : ปิด"
+immortalButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+immortalButton.Font = Enum.Font.GothamBold
+immortalButton.TextSize = 16
+immortalButton.Parent = mainFrame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 8)
+btnCorner.Parent = immortalButton
+
+local isImmortal = false
+local heartbeatConn = nil
+
+local function syncHealth(humanoid)
+	if not humanoid or humanoid.Health <= 0 then return end
+	if humanoid.MaxHealth < 100 then
+		humanoid.MaxHealth = 100
+	end
+	if humanoid.Health < humanoid.MaxHealth then
+		humanoid.Health = humanoid.MaxHealth
+	end
+end
+
+local function setImmortalState(state)
+	isImmortal = state
+
+	if isImmortal then
+		immortalButton.Text = "อมตะ : เปิด"
+		immortalButton.BackgroundColor3 = Color3.fromRGB(255, 45, 55)
+
+		if heartbeatConn then
+			heartbeatConn:Disconnect()
+		end
+
+		heartbeatConn = RunService.Heartbeat:Connect(function()
+			if not isImmortal then return end
+			local char = player.Character
+			local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				syncHealth(humanoid)
+			end
+		end)
+	else
+		immortalButton.Text = "อมตะ : ปิด"
+		immortalButton.BackgroundColor3 = Color3.fromRGB(215, 25, 35)
+
+		if heartbeatConn then
+			heartbeatConn:Disconnect()
+			heartbeatConn = nil
+		end
+	end
+end
+
+immortalButton.MouseButton1Click:Connect(function()
+	setImmortalState(not isImmortal)
+end)
+
+-- คอยรองรับตอนตัวละครเกิดใหม่
+player.CharacterAdded:Connect(function(char)
+	local humanoid = char:WaitForChild("Humanoid", 10)
+	if isImmortal and humanoid then
+		syncHealth(humanoid)
+	end
+end)
